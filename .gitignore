@@ -1,0 +1,13 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+media/
+*.mp4
+*.mov
+ai_service/models/*.pt
+ai_service/models/*.joblib
+db.sqlite3
+*.log
+.vscode/
+ai_service/models/*.json.bak

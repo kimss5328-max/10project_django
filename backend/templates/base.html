@@ -1,0 +1,29 @@
+{% load static %}
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Vision Action Platform{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="{% url 'home' %}">Vision Action</a>
+    <nav>
+      {% if user.is_authenticated %}
+        <span class="who">{{ user.username }}{% if user.is_staff %} (관리자){% endif %}</span>
+        <form method="post" action="{% url 'logout' %}" class="inline">
+          {% csrf_token %}<button type="submit" class="link">로그아웃</button>
+        </form>
+      {% else %}
+        <a href="{% url 'login' %}">로그인</a>
+        <a href="{% url 'signup' %}">회원가입</a>
+      {% endif %}
+    </nav>
+  </header>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

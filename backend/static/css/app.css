@@ -1,0 +1,18 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, "Noto Sans KR", sans-serif; background: #f5f6f8; color: #1f2328; }
+.nav { display: flex; justify-content: space-between; align-items: center; padding: 12px 24px; background: #fff; border-bottom: 1px solid #e3e5e8; }
+.nav a, .nav .link { margin-left: 16px; color: #1f2328; text-decoration: none; background: none; border: 0; cursor: pointer; font: inherit; }
+.brand { font-weight: 700; margin-left: 0 !important; }
+.who { color: #6b7280; }
+.inline { display: inline; }
+.container { max-width: 960px; margin: 32px auto; padding: 0 16px; }
+.card { background: #fff; border: 1px solid #e3e5e8; border-radius: 10px; padding: 24px; }
+.auth { max-width: 420px; margin: 0 auto; }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-weight: 600; margin-bottom: 4px; }
+.field input { width: 100%; padding: 9px 10px; border: 1px solid #cfd3d8; border-radius: 6px; }
+.help { color: #6b7280; display: block; margin-top: 4px; font-size: 12px; }
+.help ul { margin: 4px 0 0 16px; padding: 0; }
+.error { color: #c62828; font-size: 13px; margin-top: 4px; }
+.btn { width: 100%; padding: 10px; background: #2563eb; color: #fff; border: 0; border-radius: 6px; font-weight: 600; cursor: pointer; }
+.sub { text-align: center; color: #6b7280; margin-top: 14px; }

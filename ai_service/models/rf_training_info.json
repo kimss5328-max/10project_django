@@ -1,0 +1,17 @@
+{
+  "train_clips": 6,
+  "subjects": [
+    "S01"
+  ],
+  "classes": [
+    "Foam_Roller_Hip_Hinge",
+    "Seated_Knee_Extension",
+    "Shoulder_Reach_Up_&Down"
+  ],
+  "feature_count": 1140,
+  "sequence_steps": 30,
+  "min_valid_frames": 10,
+  "n_estimators": 300,
+  "max_depth": null,
+  "random_state": 42
+}
