@@ -139,7 +139,6 @@ REST_FRAMWORK = {
 
 MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", "100"))
 # 8단계에서 .env의 CAMERA_ALLOWLIST로 채움 (지금은 비어 있어 CAMERA 요청은 거부됨)
-ALLOWED_CAMERAS = {}
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6390/0")
 CELERY_BROKER_URL = REDIS_URL
@@ -152,3 +151,16 @@ CELERY_TIMEZONE = TIME_ZONE
 # FastAPI 추론 서버 (Docker에서는 http://fastapi:8001)
 AI_SERVICE_URL = os.getenv("AI_SERVICE_URL", "http://localhost:8001").rstrip("/")
 AI_SERVICE_TIMEOUT = int(os.getenv("AI_SERVICE_TIMEOUT", "600"))   # 긴 영상 + CPU 추론 고려(초)
+# IP Webcam — 사용자는 이름만 고르고, 실제 주소는 서버(.env)에만 있음
+def _parse_cameras(raw: str) -> dict:
+    cams = {}
+    for item in filter(None, (x.strip() for x in raw.split(","))):
+        name, _, url = item.partition("=")
+        if name and url:
+            cams[name.strip()] = url.strip()
+    return cams
+
+ALLOWED_CAMERAS = _parse_cameras(os.getenv("CAMERA_ALLOWLIST", ""))
+CAMERA_CAPTURE_SECONDS = float(os.getenv("CAMERA_CAPTURE_SECONDS", "8"))
+CAMERA_MIN_FRAMES = int(os.getenv("CAMERA_MIN_FRAMES", "30"))
+CAMERA_STALL_SECONDS = float(os.getenv("CAMERA_STALL_SECONDS", "3"))

@@ -12,6 +12,8 @@ django==5.2.19
 djangorestframework==3.18.3
 idna==3.20
 kombu==5.7.0
+numpy==2.5.5
+opencv-python-headless==5.1.0.95
 packaging==26.3
 prompt-toolkit==3.0.53
 psycopg==3.3.9
