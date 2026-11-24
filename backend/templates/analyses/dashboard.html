@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}관리자 대시보드{% endblock %}
+{% block content %}
+<h1 class="page-title">관리자 대시보드 <small class="muted">PostgreSQL 실데이터 · Django ORM 집계</small></h1>
+
+<div class="kpis">
+  <div class="kpi"><span>전체 작업</span><b>{{ totals.jobs }}</b></div>
+  <div class="kpi"><span>사람별 예측</span><b>{{ totals.predictions }}</b></div>
+  <div class="kpi"><span>요청 사용자</span><b>{{ totals.users }}</b></div>
+</div>
+
+<div class="grid">
+  <section class="card">
+    <h2>동작별 예측 건수</h2>
+    <div class="chart-box"><canvas id="actionChart"></canvas></div>
+  </section>
+  <section class="card">
+    <h2>작업 상태별 건수</h2>
+    <div class="chart-box"><canvas id="statusChart"></canvas></div>
+  </section>
+</div>
+
+<section class="card">
+  <h2>입력 방식별 비교 <small class="muted">(선택) 촬영 조건이 달라 성능 비교가 아님</small></h2>
+  <table class="table">
+    <thead><tr><th>입력 방식</th><th>작업 수</th><th>평균 처리 시간</th></tr></thead>
+    <tbody>
+      {% for r in input_rows %}
+      <tr><td>{{ r.label }}</td><td>{{ r.n }}</td><td>{{ r.avg_sec }}초</td></tr>
+      {% empty %}<tr><td colspan="3" class="muted">데이터 없음</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <h2>최근 작업 <a class="small" href="{% url 'admin:analyses_analysisjob_changelist' %}">Admin에서 전체 보기 →</a></h2>
+  <table class="table">
+    <thead><tr><th>#</th><th>사용자</th><th>입력</th><th>상태</th><th>예측 수</th><th>처리시간</th><th>생성</th><th>오류</th></tr></thead>
+    <tbody>
+      {% for j in recent %}
+      <tr>
+        <td><a href="{% url 'admin:analyses_analysisjob_change' j.id %}">{{ j.id }}</a></td>
+        <td>{{ j.user.username }}</td>
+        <td>{{ j.get_input_type_display }}{% if j.camera_name %} · {{ j.camera_name }}{% endif %}</td>
+        <td><span class="status s-{{ j.status }}">{{ j.get_status_display }}</span></td>
+        <td>{{ j.pred_n }}</td>
+        <td>{% if j.processing_sec is not None %}{{ j.processing_sec }}s{% else %}-{% endif %}</td>
+        <td>{{ j.created_at|date:"m-d H:i" }}</td>
+        <td class="muted">{{ j.error_message|truncatechars:40 }}</td>
+      </tr>
+      {% empty %}<tr><td colspan="8" class="muted">아직 작업이 없습니다.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{{ chart_data|json_script:"chart-data" }}
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="{% static 'js/dashboard.js' %}"></script>
+{% endblock %}

@@ -1,4 +1,4 @@
-"""analyses 앱 URL — DRF API + 사용자 화면 (10단계에서 /dashboard/ 추가)"""
+"""analyses 앱 URL — DRF API + 사용자 화면 + 관리자 대시보드"""
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
@@ -12,4 +12,5 @@ urlpatterns = [
     path("api/v1/", include(router.urls)),
     path("api/v1/cameras/<str:name>/stream/", page_views.camera_stream, name="camera_stream"),
     path("analyses/", page_views.analysis_page, name="analysis_page"),
+    path("dashboard/", page_views.dashboard, name="dashboard"),
 ]

@@ -60,3 +60,54 @@ def camera_stream(request, name: str):
         "Content-Type", "multipart/x-mixed-replace; boundary=--BoundaryString"))
     resp["Cache-Control"] = "no-store"
     return resp
+
+
+# ---------------------------------------------------------------------------
+# [10단계] 관리자 대시보드 — 실제 PostgreSQL 데이터를 Django ORM으로 집계
+# ---------------------------------------------------------------------------
+from django.core.exceptions import PermissionDenied  # noqa: E402
+from django.db.models import Avg, Count  # noqa: E402
+
+from .models import AnalysisJob, PersonPrediction  # noqa: E402
+
+
+@login_required
+def dashboard(request):
+    if not request.user.is_staff:                     # 일반 회원은 403
+        raise PermissionDenied("관리자만 접근할 수 있습니다.")
+
+    # 1) 동작별 예측 건수 (모델의 전체 Class를 0건 포함으로 표시)
+    action_rows = dict(PersonPrediction.objects.values_list("action_label")
+                       .annotate(n=Count("id")).values_list("action_label", "n"))
+    classes = _model_info()["classes"] or sorted(action_rows)
+    labels = list(classes) + [a for a in sorted(action_rows) if a not in classes]   # 예전 모델 결과도 누락 없이
+    action_counts = [action_rows.get(a, 0) for a in labels]
+
+    # 2) 상태별 작업 건수 (4가지 상태 고정 순서)
+    status_rows = dict(AnalysisJob.objects.values_list("status").annotate(n=Count("id")).values_list("status", "n"))
+    statuses = [s for s, _ in AnalysisJob.Status.choices]
+    status_counts = [status_rows.get(s, 0) for s in statuses]
+
+    # 3) (선택) 입력 방식별 건수·평균 처리 시간
+    by_input = (AnalysisJob.objects.values("input_type")
+                .annotate(n=Count("id"), avg_sec=Avg("processing_sec")).order_by("input_type"))
+    input_label = dict(AnalysisJob.InputType.choices)
+
+    chart_data = {
+        "actions": {"labels": labels, "counts": action_counts},
+        "statuses": {"labels": [dict(AnalysisJob.Status.choices)[s] for s in statuses], "keys": statuses,
+                     "counts": status_counts},
+        "inputs": {"labels": [input_label.get(r["input_type"], r["input_type"]) for r in by_input],
+                   "counts": [r["n"] for r in by_input],
+                   "avg_sec": [round(r["avg_sec"] or 0, 1) for r in by_input]},
+    }
+    recent = (AnalysisJob.objects.select_related("user")
+              .annotate(pred_n=Count("predictions")).order_by("-created_at")[:15])
+    return render(request, "analyses/dashboard.html", {
+        "chart_data": chart_data,
+        "recent": recent,
+        "input_rows": [{"label": input_label.get(r["input_type"], r["input_type"]), "n": r["n"],
+                        "avg_sec": round(r["avg_sec"] or 0, 1)} for r in by_input],
+        "totals": {"jobs": sum(status_counts), "predictions": sum(action_counts),
+                   "users": AnalysisJob.objects.values("user").distinct().count()},
+    })
