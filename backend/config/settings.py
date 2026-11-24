@@ -148,3 +148,7 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_ACKS_LATE = True            # Worker가 처리 도중 죽으면 작업을 다시 받음
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1   # 무거운 작업은 하나씩
 CELERY_TIMEZONE = TIME_ZONE
+
+# FastAPI 추론 서버 (Docker에서는 http://fastapi:8001)
+AI_SERVICE_URL = os.getenv("AI_SERVICE_URL", "http://localhost:8001").rstrip("/")
+AI_SERVICE_TIMEOUT = int(os.getenv("AI_SERVICE_TIMEOUT", "600"))   # 긴 영상 + CPU 추론 고려(초)

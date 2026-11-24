@@ -11,7 +11,7 @@ ALLOWED_VIDEO_EXT = {".mp4", ".mov", ".avi"}
 class PersonPredictionSerializer(serializers.ModelSerializer):
     class Meta:
         model = PersonPrediction
-        fields = ("track_id", "action_label", "confidence", "uncertain", "valid_frames", "first_frame", "last_frame")
+        fields = ("track_id", "action_label", "confidence", "uncertain", "valid_frames", "window_count", "first_frame", "last_frame")
         read_only_fields = fields
 
 

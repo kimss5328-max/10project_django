@@ -53,6 +53,7 @@ class PersonPrediction(models.Model):
     confidence = models.FloatField("신뢰도")
     uncertain = models.BooleanField("판단 불확실", default=False)
     valid_frames = models.PositiveIntegerField("유효 Frame 수", default=0)
+    window_count = models.PositiveIntegerField("처리한 Window 수", default=1)
     first_frame = models.PositiveIntegerField(null=True, blank=True)
     last_frame = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
