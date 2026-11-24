@@ -13,6 +13,7 @@ from django.utils import timezone
 from .camera_capture import CameraError, capture_clip
 from .models import AnalysisJob, PersonPrediction
 from .services import AIServiceError, predict_video
+from .video_utils import to_h264
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,7 @@ def run_analysis(self, job_id: int):
         capture_note = ""
         if job.input_type == AnalysisJob.InputType.CAMERA:
             clip, stats = capture_clip(job.camera_name)
+            clip = to_h264(clip, fps=stats.get("fps"))   # 브라우저 재생용 H.264 (실패 시 원본)
             try:
                 with open(clip, "rb") as f:
                     job.video.save(f"camera_{job.pk}_{job.camera_name}.mp4", File(f), save=False)
