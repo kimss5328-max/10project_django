@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}동작 분석{% endblock %}
+{% block content %}
+{% csrf_token %}
+<div id="app"
+     data-api="/api/v1/analyses/"
+     data-capture-seconds="{{ capture_seconds }}"
+     data-max-upload-mb="{{ max_upload_mb }}"></div>
+
+<p class="model-line">
+  모델 <b>{{ model.version|default:"-" }}</b> ·
+  {% if model.classes %}{{ model.classes|length }}개 동작 ({{ model.classes|join:", " }}){% else %}동작 정보 없음{% endif %} ·
+  AI 서버 <span class="dot {% if model.ok %}ok{% else %}bad{% endif %}"></span>{% if model.ok %}정상{% else %}연결 안 됨{% endif %}
+</p>
+
+<div class="grid">
+  <!-- ① 새 분석 -->
+  <section class="card">
+    <h2>새 분석</h2>
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab active" data-mode="UPLOAD">영상 업로드</button>
+      <button type="button" class="tab" data-mode="CAMERA" {% if not cameras %}disabled title="허용된 카메라 없음"{% endif %}>IP Webcam</button>
+    </div>
+
+    <form id="analysis-form" novalidate>
+      <div class="pane" data-pane="UPLOAD">
+        <div class="field">
+          <label for="video">영상 파일 <small>(mp4·mov·avi, {{ max_upload_mb }}MB 이하)</small></label>
+          <input type="file" id="video" name="video" accept=".mp4,.mov,.avi,video/*">
+        </div>
+      </div>
+
+      <div class="pane hidden" data-pane="CAMERA">
+        <div class="field">
+          <label for="camera_name">카메라</label>
+          <select id="camera_name" name="camera_name">
+            {% for c in cameras %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="preview">
+          <img id="preview" alt="카메라 미리보기">
+          <div id="preview-msg" class="preview-msg">미리보기 불러오는 중…</div>
+          <div id="capture-overlay" class="capture-overlay hidden"></div>
+        </div>
+        <small class="help">'AI 분석 시작'을 누르면 <b>{{ capture_seconds|floatformat:0 }}초</b> 동안 영상을 수집합니다. 몸 전체가 화면에 들어오게 서 주세요.</small>
+      </div>
+
+      <div class="field"><label for="title">제목 <small>(선택)</small></label>
+        <input id="title" name="title" maxlength="100"></div>
+      <div class="field"><label for="memo">메모 <small>(선택)</small></label>
+        <textarea id="memo" name="memo" rows="2"></textarea></div>
+      <div class="field"><label for="expected_action">수행하려는 동작 <small>(선택, 참고용·정답 아님)</small></label>
+        <select id="expected_action" name="expected_action">
+          <option value="">선택 안 함</option>
+          {% for c in model.classes %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+        </select></div>
+
+      <div id="form-error" class="error hidden"></div>
+      <button type="submit" id="start-btn" class="btn">AI 분석 시작</button>
+    </form>
+  </section>
+
+  <!-- ② 진행 상태·결과 -->
+  <section class="card">
+    <h2>진행 상태 · 결과 <span id="job-label" class="muted"></span></h2>
+    <ol class="steps" id="steps">
+      <li data-s="PENDING">대기</li><li data-s="PROCESSING">처리 중</li><li data-s="DONE">완료/실패</li>
+    </ol>
+    <p id="status-text" class="muted">분석을 시작하거나 아래 이력에서 작업을 선택하세요.</p>
+    <div id="result"></div>
+  </section>
+</div>
+
+<!-- ③ 최근 분석 이력 -->
+<section class="card">
+  <h2>최근 분석 이력 <button type="button" id="refresh" class="link small">새로고침</button></h2>
+  <table class="table">
+    <thead><tr><th>#</th><th>제목</th><th>입력</th><th>상태</th><th>예측</th><th>처리시간</th><th>생성</th></tr></thead>
+    <tbody id="history"><tr><td colspan="7" class="muted">불러오는 중…</td></tr></tbody>
+  </table>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/analyses.js' %}"></script>{% endblock %}
