@@ -140,3 +140,11 @@ REST_FRAMWORK = {
 MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", "100"))
 # 8단계에서 .env의 CAMERA_ALLOWLIST로 채움 (지금은 비어 있어 CAMERA 요청은 거부됨)
 ALLOWED_CAMERAS = {}
+
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6390/0")
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_ACKS_LATE = True            # Worker가 처리 도중 죽으면 작업을 다시 받음
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1   # 무거운 작업은 하나씩
+CELERY_TIMEZONE = TIME_ZONE

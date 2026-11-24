@@ -157,7 +157,7 @@ def feature_from_keypoints(keypoints):
     feature.extend(
         [
             float(angles["left_elbow_angle"]),
-            float(angles["right_elbow_angle"]),
+            float(angles["right_elbow_angle"]),      
             float(angles["left_knee_angle"]),
             float(angles["right_knee_angle"]),
         ]

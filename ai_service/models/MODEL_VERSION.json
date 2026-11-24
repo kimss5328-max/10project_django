@@ -1,11 +1,13 @@
 {
-  "synced_at": "2026-11-23T16:32:01",
-  "source": "/home/user1/ai_vision/subject10_pose_action/artifacts/day06",
-  "joblib_md5": "15d96d8dc4",
+  "synced_at": "2026-11-24T09:59:01",
+  "source": "/home/user1/ai_vision/mothion/artifacts/team",
+  "original_joblib": "rf_action_team.joblib",
+  "joblib_md5": "0f66e1c52b",
+  "pose_model": "mediapipe pose_landmarker_heavy (33 → COCO17 mapped)",
   "classes": [
-    "Foam_Roller_Hip_Hinge",
-    "Seated_Knee_Extension",
-    "Shoulder_Reach_Up_&Down"
+    "seated_knee_extension",
+    "shoulder_reach_up_down",
+    "side_lying_leg_raise"
   ],
   "feature_count": 1140,
   "sequence_steps": 30

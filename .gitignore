@@ -11,3 +11,4 @@ db.sqlite3
 *.log
 .vscode/
 ai_service/models/*.json.bak
+ai_service/models/*.task

@@ -1,16 +1,24 @@
 {
-  "train_clips": 6,
-  "subjects": [
-    "S01"
-  ],
+  "pose_model": "mediapipe pose_landmarker_heavy (33 → COCO17 mapped)",
+  "action_file": "configs/action_classes_heavy.csv",
   "classes": [
-    "Foam_Roller_Hip_Hinge",
-    "Seated_Knee_Extension",
-    "Shoulder_Reach_Up_&Down"
+    "seated_knee_extension",
+    "shoulder_reach_up_down",
+    "side_lying_leg_raise"
   ],
   "feature_count": 1140,
   "sequence_steps": 30,
   "min_valid_frames": 10,
+  "train_subjects": [
+    "S01"
+  ],
+  "val_subjects": [
+    "S02"
+  ],
+  "test_subjects": [
+    "S03"
+  ],
+  "train_clips": 16,
   "n_estimators": 300,
   "max_depth": null,
   "random_state": 42

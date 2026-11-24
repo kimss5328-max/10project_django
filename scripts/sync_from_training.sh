@@ -1,39 +1,42 @@
 #!/usr/bin/env bash
-# 학습 프로젝트(subject10_pose_action)의 결과물을 ai_service로 다시 가져온다.
-# 사용: bash scripts/sync_from_training.sh [학습프로젝트 경로] [artifacts 하위폴더]
+# 학습 프로젝트 산출물을 ai_service로 가져온다.
+# 사용: bash scripts/sync_from_training.sh [학습프로젝트] [artifacts 하위폴더: day06 | team]
 set -euo pipefail
-SRC_ROOT="${1:-$HOME/ai_vision/subject10_pose_action}"
-ART="${2:-day06}"
+SRC_ROOT="${1:-$HOME/ai_vision/mothion}"
+ART="${2:-team}"
+A="$SRC_ROOT/artifacts/$ART"
 DST="$(cd "$(dirname "$0")/.." && pwd)/ai_service"
+echo "[원본] $A"
+mkdir -p "$DST/models" "$DST/src" "$DST/configs"
 
-echo "[원본] $SRC_ROOT  (artifacts/$ART)"
-mkdir -p "$DST/models" "$DST/src"
+# 1) 모델 3개 (joblib 이름은 ai_service 안에서 rf_action_baseline.joblib 로 통일)
+JOBLIB=$(ls "$A"/rf_action_*.joblib | head -1)
+cp -v "$JOBLIB" "$DST/models/rf_action_baseline.joblib"
+cp -v "$A/rf_feature_columns.json" "$A/rf_training_info.json" "$DST/models/"
 
-# 1) 모델 3개 파일
-for f in rf_action_baseline.joblib rf_feature_columns.json rf_training_info.json; do
-  cp -v "$SRC_ROOT/artifacts/$ART/$f" "$DST/models/"
-done
-
-# 2) 추론 유틸 (있는 것만)
-for f in pose_utils feature_utils sequence_utils realtime_utils multi_person_utils; do
-  if [ -f "$SRC_ROOT/src/$f.py" ]; then cp -v "$SRC_ROOT/src/$f.py" "$DST/src/"; else echo "  (없음, 건너뜀) src/$f.py"; fi
+# 2) 추론 유틸 (+ heavy 어댑터)
+for f in pose_utils feature_utils sequence_utils realtime_utils multi_person_utils heavy_pose; do
+  [ -f "$SRC_ROOT/src/$f.py" ] && cp -v "$SRC_ROOT/src/$f.py" "$DST/src/" || echo "  (없음) src/$f.py"
 done
 touch "$DST/src/__init__.py"
 
-# 3) Pose 설정 + YOLO 가중치
+# 3) 설정 + YOLO 가중치(사람 박스·ByteTrack용)
 cp -v "$SRC_ROOT/configs/project.json" "$DST/"
-PT=$(python3 -c "import json;print(json.load(open('$SRC_ROOT/configs/project.json'))['pose_model'])"); cp -v "$SRC_ROOT/$PT" "$DST/models/"
+for c in action_classes.csv action_classes_heavy.csv day07_realtime.json day08_multi_person.json; do
+  [ -f "$SRC_ROOT/configs/$c" ] && cp -v "$SRC_ROOT/configs/$c" "$DST/configs/"
+done
+PT=$(python3 -c "import json;print(json.load(open('$SRC_ROOT/configs/project.json'))['pose_model'])")
+[ -f "$SRC_ROOT/$PT" ] && cp -v "$SRC_ROOT/$PT" "$DST/models/" || echo "  (없음) $PT — ultralytics가 자동 다운로드"
 
-# 4) 어떤 모델을 가져왔는지 기록
-python3 - "$DST/models" "$SRC_ROOT" "$ART" <<'PY'
+# 4) 기록
+python3 - "$DST/models" "$A" "$(basename "$JOBLIB")" <<'PY'
 import json, sys, datetime, hashlib, pathlib
 m = pathlib.Path(sys.argv[1]); info = json.loads((m/"rf_training_info.json").read_text(encoding="utf-8"))
-h = hashlib.md5((m/"rf_action_baseline.joblib").read_bytes()).hexdigest()[:10]
-rec = {"synced_at": datetime.datetime.now().isoformat(timespec="seconds"),
-       "source": f"{sys.argv[2]}/artifacts/{sys.argv[3]}", "joblib_md5": h,
-       "classes": info.get("classes"), "feature_count": info.get("feature_count", info.get("n_features")),
-       "sequence_steps": info.get("sequence_steps")}
+rec = {"synced_at": datetime.datetime.now().isoformat(timespec="seconds"), "source": sys.argv[2],
+       "original_joblib": sys.argv[3],
+       "joblib_md5": hashlib.md5((m/"rf_action_baseline.joblib").read_bytes()).hexdigest()[:10],
+       "pose_model": info.get("pose_model", "yolo"), "classes": info.get("classes"),
+       "feature_count": info.get("feature_count"), "sequence_steps": info.get("sequence_steps")}
 (m/"MODEL_VERSION.json").write_text(json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
 print(json.dumps(rec, ensure_ascii=False, indent=2))
 PY
-echo "완료 → $DST"

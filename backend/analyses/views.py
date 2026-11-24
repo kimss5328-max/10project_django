@@ -2,6 +2,9 @@ from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
+from django.db import transaction
+from .tasks import run_analysis
+
 
 from .models import AnalysisJob
 from .serializers import AnalysisJobSerializer, AnalysisJobUpdateSerializer
@@ -32,8 +35,14 @@ class AnalysisJobViewSet(viewsets.ModelViewSet):
         return AnalysisJobSerializer
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user, status=AnalysisJob.Status.PENDING)
-        # Celery 등록은 6단계에서 추가
+        job = serializer.save(user=self.request.user, status=AnalysisJob.Status.PENDING)
+
+        def enqueue():
+            result = run_analysis.delay(job.id)
+            AnalysisJob.objects.filter(pk=job.id).update(celery_task_id=result.id)
+
+        # DB 저장(커밋)이 끝난 뒤에 등록 → Worker가 아직 없는 Job을 찾는 문제 방지
+        transaction.on_commit(enqueue)
 
     def perform_destroy(self, instance):
         if instance.video:
