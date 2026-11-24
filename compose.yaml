@@ -1,0 +1,77 @@
+# vision_action_platform — 5개 서비스: postgres · redis · fastapi · django · celery
+# 실행: docker compose up --build        (vision_action_platform 폴더에서)
+# 접속: 사용자 화면 http://localhost:8002/  ·  FastAPI 문서 http://localhost:8001/docs
+name: vision_action
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data          # 컨테이너를 지워도 DB 유지
+    ports:
+      - "5440:5432"                              # (개발용) PC에서 psql 확인
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  fastapi:
+    build: ./ai_service
+    environment:
+      MODEL_DIR: /app/models
+      YOLO_CONFIG_DIR: /tmp/ultralytics
+    volumes:
+      - ./ai_service/models:/app/models:ro       # 모델 파일은 Git·이미지에 넣지 않고 연결
+    ports:
+      - "8001:8001"                              # (개발용) Swagger 확인. 시연 땐 지워도 됨
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if b'\"ok\"' in urllib.request.urlopen('http://localhost:8001/health',timeout=3).read() else 1)"]
+      interval: 10s
+      retries: 30
+      start_period: 30s
+
+  django:
+    build: ./backend
+    env_file: .env
+    environment: &backend_env
+      POSTGRES_HOST: postgres                    # 컨테이너끼리는 서비스 이름으로 통신
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+      AI_SERVICE_URL: http://fastapi:8001
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,django
+    command: sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend/media:/app/media               # 업로드·수집 영상 (celery와 공유)
+    ports:
+      - "8002:8000"                              # PC의 8000은 다른 프로젝트가 사용 중
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  celery:
+    build: ./backend                             # django와 같은 이미지·코드
+    env_file: .env
+    environment: *backend_env
+    command: celery -A config worker -l info --pool=solo
+    volumes:
+      - ./backend/media:/app/media
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      fastapi: { condition: service_healthy }
+
+volumes:
+  pgdata:
+    name: vap_pgdata                             # 로컬 개발 때 쓰던 볼륨을 그대로 이어서 사용
+    external: true
